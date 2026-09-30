@@ -94,6 +94,12 @@
                     <span>Scrape & Analyze</span>
                 </button>
 
+                <!-- Mobile / Phone Access QR Button -->
+                <button onclick="openModal('qrModal')" class="btn-glow inline-flex items-center px-3 py-1.5 text-xs sm:text-sm font-semibold text-emerald-300 bg-emerald-950/60 border border-emerald-500/40 rounded-xl hover:bg-emerald-900/60 transition shadow-sm">
+                    <i data-lucide="smartphone" class="w-4 h-4 mr-1.5 text-emerald-400"></i>
+                    <span class="hidden sm:inline">Phone Access</span>
+                </button>
+
                 <!-- Export / Print Audit Report -->
                 <button onclick="window.print()" class="p-2 text-slate-400 hover:text-indigo-400 hover:bg-slate-800/60 rounded-xl transition" title="Print or Save PDF Report">
                     <i data-lucide="printer" class="w-4 h-4"></i>
@@ -837,6 +843,28 @@
                         <i data-lucide="copy" class="w-4 h-4 mr-1.5"></i> Copy to Clipboard
                     </button>
                 </div>
+            </div>
+    <!-- MODAL 4: QR Code & Mobile Access Modal -->
+    <div id="qrModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md hidden p-4">
+        <div class="dark-glass rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-700/80 relative bg-[#0f172a] text-center">
+            <button onclick="closeModal('qrModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto mb-3">
+                <i data-lucide="smartphone" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-black text-white">Access On Any Phone</h3>
+            <p class="text-xs text-slate-400 mt-1 mb-4">Scan this QR code with your phone camera to open the live web app instantly on mobile data or Wi-Fi.</p>
+            
+            <div class="bg-white p-3 rounded-2xl inline-block shadow-lg mx-auto">
+                <img src="/static/qr_code.png" alt="Scan QR Code" class="w-48 h-48 rounded-lg mx-auto object-contain">
+            </div>
+
+            <div class="mt-4 bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 text-xs flex items-center justify-between">
+                <span class="text-indigo-400 truncate max-w-[200px] select-all font-mono">https://da9f9dc8c58aa3.lhr.life</span>
+                <button onclick="navigator.clipboard.writeText('https://da9f9dc8c58aa3.lhr.life'); alert('Link copied to clipboard!');" class="btn-glow px-2.5 py-1 text-[11px] font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500">
+                    Copy
+                </button>
             </div>
         </div>
     </div>
