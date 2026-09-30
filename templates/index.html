@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentiPulse Local - Sentiment Analysis of Local Business Reviews & Survey Analytics</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            base: '#090d16',
+                            card: '#111827',
+                            surface: '#1e293b',
+                            border: '#334155'
+                        },
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom Dark Luxury & Animation CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-[#090d16] text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+    <!-- Interactive Mouse Cursor Spotlight Follower -->
+    <div id="mouse-spotlight"></div>
+
+    <!-- Ambient Glowing Background Mesh Orbs -->
+    <div class="bg-mesh-glow">
+        <div class="glow-orb glow-orb-1"></div>
+        <div class="glow-orb glow-orb-2"></div>
+        <div class="glow-orb glow-orb-3"></div>
+    </div>
+
+    <!-- Navigation Header -->
+    <header class="bg-[#0c1220]/80 border-b border-slate-800/80 sticky top-0 z-40 backdrop-blur-xl shadow-lg shadow-black/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25 ring-1 ring-white/20">
+                    <i data-lucide="sparkles" class="w-5 h-5 animate-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-violet-300 to-sky-400 leading-tight tracking-wide">
+                        SentiPulse Local
+                    </h1>
+                    <p class="text-xs text-slate-400 font-medium hidden sm:block">
+                        Sentiment Analysis & AI Advisory for Local Businesses
+                    </p>
+                </div>
+            </div>
+
+            <!-- Header Quick Actions -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <!-- Business Switcher -->
+                <div class="relative">
+                    <select id="businessSelector" onchange="switchSampleBusiness(this.value)" class="text-xs sm:text-sm font-medium bg-slate-900/90 border border-slate-700/80 text-slate-200 py-1.5 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer shadow-inner hover:border-slate-600 transition">
+                        {% for b in sample_businesses %}
+                            <option value="{{ b.id }}" {% if b.id == active_business.id %}selected{% endif %}>
+                                🏢 {{ b.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Single Review Test Button -->
+                <button onclick="openModal('singleTestModal')" class="btn-glow inline-flex items-center px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-slate-200 bg-slate-800/80 border border-slate-700/80 rounded-xl hover:bg-slate-700/80 hover:text-white transition shadow-sm">
+                    <i data-lucide="message-square-plus" class="w-4 h-4 mr-1.5 text-indigo-400"></i>
+                    <span class="hidden md:inline">Test</span> Review
+                </button>
+
+                <!-- New Scrape & Analyze Button -->
+                <button onclick="openModal('scrapeModal')" class="btn-glow inline-flex items-center px-4 py-1.5 text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl hover:from-indigo-500 hover:to-violet-500 transition shadow-lg shadow-indigo-600/30 ring-1 ring-white/20">
+                    <i data-lucide="scan-search" class="w-4 h-4 mr-1.5"></i>
+                    <span>Scrape & Analyze</span>
+                </button>
+
+                <!-- Export / Print Audit Report -->
+                <button onclick="window.print()" class="p-2 text-slate-400 hover:text-indigo-400 hover:bg-slate-800/60 rounded-xl transition" title="Print or Save PDF Report">
+                    <i data-lucide="printer" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sub-bar: Project Metadata & Description -->
+    <div class="bg-indigo-950/40 border-b border-indigo-900/40 py-2.5 px-4 sm:px-6 lg:px-8 text-xs text-indigo-300 flex flex-wrap items-center justify-between backdrop-blur-md relative z-10">
+        <div class="flex items-center space-x-2">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                Project Title
+            </span>
+            <span class="font-bold text-slate-100">Sentiment Analysis of Local Business Reviews</span>
+            <span class="text-slate-500 hidden sm:inline">•</span>
+            <span class="text-slate-400 hidden md:inline">Scraping online reviews (Twitter & Google); generating automated feedback to optimize business services.</span>
+        </div>
+        <div class="flex items-center space-x-3 text-xs mt-1 sm:mt-0 font-medium">
+            <span class="flex items-center text-emerald-400"><span class="w-2 h-2 rounded-full bg-emerald-400 mr-1.5 animate-pulse shadow-sm shadow-emerald-400"></span> Google Scraper Active</span>
+            <span class="flex items-center text-sky-400"><span class="w-2 h-2 rounded-full bg-sky-400 mr-1.5 animate-pulse shadow-sm shadow-sky-400"></span> Twitter / X Scraper Active</span>
+        </div>
+    </div>
+
+    <!-- Primary Navigation Mode Switcher -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2 w-full relative z-10">
+        <div class="bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800 flex items-center justify-center sm:justify-start space-x-2 max-w-md backdrop-blur-xl shadow-lg shadow-black/20">
+            <button id="tabBtnSentiment" onclick="switchDashboardTab('sentiment')" class="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 transition-all duration-200">
+                <i data-lucide="bar-chart-3" class="w-4 h-4 mr-2"></i>
+                Business Sentiment Live
+            </button>
+            <button id="tabBtnSurvey" onclick="switchDashboardTab('survey')" class="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-400 hover:text-white transition-all duration-200">
+                <i data-lucide="pie-chart" class="w-4 h-4 mr-2"></i>
+                Consumer Survey (50 Responses)
+                <span class="ml-2 px-1.5 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hidden md:inline">50 Data</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-6 relative z-10">
+
+        <!-- ========================================== -->
+        <!-- TAB 1: BUSINESS SENTIMENT & AI ADVISOR     -->
+        <!-- ========================================== -->
+        <section id="sentimentDashboardSection" class="space-y-6">
+
+            <!-- Business Profile Hero Banner -->
+            <div class="dark-glass hover-lift hover-tilt rounded-2xl p-6 sm:p-7 relative overflow-hidden shadow-2xl shadow-black/40">
+                <div class="absolute -right-20 -top-20 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <div class="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
+                    <div class="space-y-2">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span id="bizCategory" class="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-slate-800/90 text-indigo-300 border border-indigo-500/30 shadow-inner">
+                                {{ active_business.category }}
+                            </span>
+                            <span class="flex items-center text-xs font-medium text-slate-400 bg-slate-900/60 px-2 py-0.5 rounded-md border border-slate-800">
+                                <i data-lucide="map-pin" class="w-3.5 h-3.5 mr-1 text-slate-500"></i>
+                                <span id="bizLocation">{{ active_business.location }}</span>
+                            </span>
+                            <span class="flex items-center text-xs font-semibold text-sky-400 bg-sky-950/40 px-2 py-0.5 rounded-md border border-sky-800/50">
+                                <i data-lucide="twitter" class="w-3.5 h-3.5 mr-1"></i>
+                                <span id="bizTwitter">{{ active_business.twitter_handle }}</span>
+                            </span>
+                        </div>
+                        <h2 id="bizName" class="text-2xl sm:text-4xl font-black text-white tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-indigo-200">
+                            {{ active_business.name }}
+                        </h2>
+                        <p id="bizExecutiveSummary" class="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed font-normal">
+                            {{ recommendations.summary }}
+                        </p>
+                    </div>
+
+                    <!-- Customer Satisfaction Health Card -->
+                    <div class="flex items-center space-x-5 bg-slate-900/80 p-4 sm:p-5 rounded-2xl border border-slate-700/80 w-full sm:w-auto justify-between sm:justify-start shadow-xl shadow-black/30 backdrop-blur-xl">
+                        <div>
+                            <div class="text-[11px] uppercase tracking-wider font-bold text-slate-400">Satisfaction Grade</div>
+                            <div class="flex items-baseline space-x-2 mt-0.5">
+                                <span id="bizGrade" class="text-3xl sm:text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-violet-400">{{ recommendations.grade }}</span>
+                                <span id="bizGradeDesc" class="text-xs font-medium text-slate-300">{{ recommendations.grade_desc }}</span>
+                            </div>
+                        </div>
+                        <div class="h-10 w-px bg-slate-700/80"></div>
+                        <div class="text-right">
+                            <div class="text-[11px] uppercase tracking-wider font-bold text-slate-400">Health Index</div>
+                            <div id="bizScore" class="text-2xl sm:text-3xl font-extrabold text-white mt-0.5">{{ analysis.overall_sentiment_score }}%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI Metrics Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Metric 1: Overall Sentiment -->
+                <div class="dark-glass hover-lift hover-tilt rounded-2xl p-5 shadow-lg flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Overall Sentiment</p>
+                        <h3 id="kpiOverallScore" class="text-2xl font-black text-white mt-1">{{ analysis.overall_sentiment_score }}%</h3>
+                        <p class="text-xs text-emerald-400 font-semibold flex items-center mt-1">
+                            <i data-lucide="trending-up" class="w-3.5 h-3.5 mr-1"></i>
+                            <span id="kpiNetPositive">{{ analysis.sentiment_percentages.Positive }}% Positive Ratio</span>
+                        </p>
+                    </div>
+                    <div class="card-icon w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-950/50">
+                        <i data-lucide="smile" class="w-6 h-6"></i>
+                    </div>
+                </div>
+
+                <!-- Metric 2: Total Analyzed Reviews -->
+                <div class="dark-glass hover-lift hover-tilt rounded-2xl p-5 shadow-lg flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Analyzed</p>
+                        <h3 id="kpiTotalReviews" class="text-2xl font-black text-white mt-1">{{ analysis.total_reviews }}</h3>
+                        <div class="flex items-center space-x-2 mt-1 text-xs text-slate-400">
+                            <span class="inline-flex items-center"><i data-lucide="globe" class="w-3 h-3 mr-1 text-amber-400"></i> Google: <b id="kpiGoogleCount" class="ml-1 text-slate-200">{{ analysis.source_breakdown.google.total if analysis.source_breakdown.google else 0 }}</b></span>
+                            <span>•</span>
+                            <span class="inline-flex items-center"><i data-lucide="twitter" class="w-3 h-3 mr-1 text-sky-400"></i> X: <b id="kpiTwitterCount" class="ml-1 text-slate-200">{{ analysis.source_breakdown.twitter.total if analysis.source_breakdown.twitter else 0 }}</b></span>
+                        </div>
+                    </div>
+                    <div class="card-icon w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shadow-lg shadow-indigo-950/50">
+                        <i data-lucide="database" class="w-6 h-6"></i>
+                    </div>
+                </div>
+
+                <!-- Metric 3: Critical Negatives -->
+                <div class="dark-glass hover-lift hover-tilt rounded-2xl p-5 shadow-lg flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Critical Friction</p>
+                        <h3 id="kpiNegativePct" class="text-2xl font-black text-rose-400 mt-1">{{ analysis.sentiment_percentages.Negative }}%</h3>
+                        <p class="text-xs text-slate-400 font-medium mt-1">
+                            <span id="kpiNegativeCount" class="font-bold text-rose-400">{{ analysis.sentiment_counts.Negative }}</span> reviews need reply
+                        </p>
+                    </div>
+                    <div class="card-icon w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center shadow-lg shadow-rose-950/50">
+                        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                    </div>
+                </div>
+
+                <!-- Metric 4: Key Growth Opportunity -->
+                <div class="dark-glass hover-lift hover-tilt rounded-2xl p-5 shadow-lg flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Top Driver</p>
+                        <h3 id="kpiTopDriver" class="text-xl font-black text-white mt-1 capitalize">
+                            {{ analysis.key_drivers[0].word if analysis.key_drivers else "Customer Care" }}
+                        </h3>
+                        <p class="text-xs text-slate-400 font-medium mt-1">
+                            Most praised attribute
+                        </p>
+                    </div>
+                    <div class="card-icon w-12 h-12 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400 flex items-center justify-center shadow-lg shadow-violet-950/50">
+                        <i data-lucide="award" class="w-6 h-6"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Interactive Visualizations -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Chart 1: Sentiment Polarity Breakdown -->
+                <div class="dark-glass hover-lift rounded-2xl p-5 shadow-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-white flex items-center">
+                            <i data-lucide="pie-chart" class="w-4 h-4 mr-2 text-indigo-400"></i>
+                            Sentiment Polarity Ratio
+                        </h3>
+                        <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">VADER NLP</span>
+                    </div>
+                    <div class="relative h-60 flex items-center justify-center">
+                        <canvas id="sentimentDoughnutChart"></canvas>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-slate-800 text-center text-xs">
+                        <div>
+                            <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 mr-1 shadow-sm shadow-emerald-400"></span>
+                            <span class="text-slate-400">Positive:</span>
+                            <div id="chartPosPct" class="font-extrabold text-emerald-400">{{ analysis.sentiment_percentages.Positive }}%</div>
+                        </div>
+                        <div>
+                            <span class="inline-block w-2.5 h-2.5 rounded-full bg-slate-400 mr-1 shadow-sm shadow-slate-400"></span>
+                            <span class="text-slate-400">Neutral:</span>
+                            <div id="chartNeuPct" class="font-extrabold text-slate-300">{{ analysis.sentiment_percentages.Neutral }}%</div>
+                        </div>
+                        <div>
+                            <span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-400 mr-1 shadow-sm shadow-rose-400"></span>
+                            <span class="text-slate-400">Negative:</span>
+                            <div id="chartNegPct" class="font-extrabold text-rose-400">{{ analysis.sentiment_percentages.Negative }}%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart 2: Aspect-Based Satisfaction (Radar or Horizontal Bar) -->
+                <div class="dark-glass hover-lift rounded-2xl p-5 shadow-lg lg:col-span-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-white flex items-center">
+                                <i data-lucide="sliders" class="w-4 h-4 mr-2 text-indigo-400"></i>
+                                Aspect-Based Satisfaction Analysis (ABSA)
+                            </h3>
+                            <p class="text-xs text-slate-400">Satisfaction rate across individual service dimensions</p>
+                        </div>
+                        <span class="text-xs font-bold px-2.5 py-1 bg-indigo-950/80 text-indigo-300 border border-indigo-700/50 rounded-lg shadow-inner">
+                            6 Dimensions Tracked
+                        </span>
+                    </div>
+                    <div class="relative h-64">
+                        <canvas id="aspectBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: AI Business Feedback & Improvement Recommendations -->
+            <div class="dark-glass hover-lift rounded-2xl shadow-xl overflow-hidden border border-slate-800">
+                <div class="bg-gradient-to-r from-indigo-950 via-slate-900 to-violet-950 p-6 border-b border-slate-800/80">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 mb-2 border border-indigo-500/30">
+                                <i data-lucide="brain-circuit" class="w-3.5 h-3.5 mr-1.5 animate-pulse"></i>
+                                AI Service Advisory Engine
+                            </div>
+                            <h3 class="text-xl font-black text-white tracking-tight">Business Feedback & Actionable Recommendations</h3>
+                            <p class="text-xs text-slate-400 mt-1">Data-driven operational directives synthesized from scraped customer reviews.</p>
+                        </div>
+                        <!-- Export Report Action -->
+                        <button onclick="exportAuditReportJSON()" class="btn-glow inline-flex items-center px-4 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition shadow-lg">
+                            <i data-lucide="download" class="w-4 h-4 mr-1.5 text-indigo-400"></i>
+                            Export JSON Audit
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-6 space-y-6">
+                    <!-- Action Items Cards -->
+                    <div>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center">
+                            <i data-lucide="check-circle-2" class="w-4 h-4 mr-1.5 text-indigo-400"></i>
+                            Prioritized Operational Action Plan
+                        </h4>
+                        <div id="actionItemsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {% for item in recommendations.action_items %}
+                            <div class="p-4 rounded-xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl {% if item.priority == 'High' %}border-rose-500/30 bg-rose-950/20 shadow-rose-950/20{% elif item.priority == 'Medium' %}border-amber-500/30 bg-amber-950/20 shadow-amber-950/20{% else %}border-emerald-500/30 bg-emerald-950/20 shadow-emerald-950/20{% endif %}">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold {% if item.priority == 'High' %}bg-rose-900/60 text-rose-300 border border-rose-500/40{% elif item.priority == 'Medium' %}bg-amber-900/60 text-amber-300 border border-amber-500/40{% else %}bg-emerald-900/60 text-emerald-300 border border-emerald-500/40{% endif %}">
+                                        {{ item.priority }} Priority
+                                    </span>
+                                    <span class="text-xs font-medium text-slate-400">{{ item.category }}</span>
+                                </div>
+                                <h5 class="text-sm font-bold text-white mb-1.5">{{ item.title }}</h5>
+                                <p class="text-xs text-slate-300 leading-relaxed">{{ item.details }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Strengths vs Pain Points -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-800/80">
+                        <!-- Positive Drivers -->
+                        <div>
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-3 flex items-center">
+                                <i data-lucide="thumbs-up" class="w-4 h-4 mr-1.5 text-emerald-400"></i>
+                                Key Customer Delight Drivers
+                            </h4>
+                            <div id="keyDriversContainer" class="flex flex-wrap gap-2">
+                                {% for d in analysis.key_drivers %}
+                                <span class="tag-chip inline-flex items-center px-3 py-1 rounded-xl text-xs font-medium bg-emerald-950/40 text-emerald-300 border border-emerald-500/30 shadow-sm">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-2 shadow-sm shadow-emerald-400"></span>
+                                    {{ d.word }} <span class="ml-1.5 text-emerald-400 font-bold">({{ d.count }})</span>
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Friction & Pain Points -->
+                        <div>
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-rose-400 mb-3 flex items-center">
+                                <i data-lucide="thumbs-down" class="w-4 h-4 mr-1.5 text-rose-400"></i>
+                                Reported Friction & Pain Points
+                            </h4>
+                            <div id="painPointsContainer" class="flex flex-wrap gap-2">
+                                {% for p in analysis.pain_points %}
+                                <span class="tag-chip inline-flex items-center px-3 py-1 rounded-xl text-xs font-medium bg-rose-950/40 text-rose-300 border border-rose-500/30 shadow-sm">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-400 mr-2 shadow-sm shadow-rose-400"></span>
+                                    {{ p.word }} <span class="ml-1.5 text-rose-400 font-bold">({{ p.count }})</span>
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pre-Drafted AI Review Response Templates -->
+                    <div class="pt-4 border-t border-slate-800/80">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center">
+                            <i data-lucide="message-square" class="w-4 h-4 mr-1.5 text-indigo-400"></i>
+                            Automated Professional Review Responses (For Business Owners)
+                        </h4>
+                        <div id="responseTemplatesContainer" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                            {% for tmpl in recommendations.response_templates %}
+                            <div class="dark-glass rounded-xl p-4 border border-slate-800 flex flex-col justify-between hover-lift">
+                                <div>
+                                    <span class="text-xs font-bold text-indigo-400 block mb-1">{{ tmpl.scenario }}</span>
+                                    <p class="text-xs text-slate-400 mb-2 font-medium">{{ tmpl.subject }}</p>
+                                    <pre class="text-xs text-slate-300 bg-slate-950/90 p-3 rounded-xl border border-slate-800/90 whitespace-pre-wrap font-sans leading-relaxed select-all">{{ tmpl.template }}</pre>
+                                </div>
+                                <button onclick="copyToClipboard(this)" class="btn-glow mt-3 inline-flex items-center justify-center px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-200 border border-slate-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-500 transition">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5 mr-1.5"></i>
+                                    Copy Response
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Interactive Filterable Reviews Feed -->
+            <div class="dark-glass hover-lift rounded-2xl border border-slate-800 p-6 shadow-xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h3 class="text-base font-black text-white flex items-center">
+                            <i data-lucide="list-checks" class="w-5 h-5 mr-2 text-indigo-400"></i>
+                            Customer Reviews & Tweets Feed
+                        </h3>
+                        <p class="text-xs text-slate-400">Filter, inspect aspect sentiment, and draft 1-click tailored replies.</p>
+                    </div>
+
+                    <!-- Filter Pills & Search -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="relative">
+                            <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
+                            <input type="text" id="reviewSearchInput" onkeyup="filterReviews()" placeholder="Search review text..." class="pl-9 pr-3 py-1.5 text-xs bg-slate-900/90 border border-slate-700/80 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 w-44 sm:w-56 placeholder-slate-500">
+                        </div>
+
+                        <!-- Platform Filter -->
+                        <select id="platformFilter" onchange="filterReviews()" class="text-xs bg-slate-900/90 border border-slate-700/80 text-slate-200 py-1.5 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer">
+                            <option value="all">All Sources</option>
+                            <option value="google">Google Reviews</option>
+                            <option value="twitter">Twitter / X</option>
+                        </select>
+
+                        <!-- Sentiment Filter -->
+                        <select id="sentimentFilter" onchange="filterReviews()" class="text-xs bg-slate-900/90 border border-slate-700/80 text-slate-200 py-1.5 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer">
+                            <option value="all">All Sentiments</option>
+                            <option value="Positive">Positive Only</option>
+                            <option value="Negative">Negative Only</option>
+                            <option value="Neutral">Neutral Only</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Reviews Grid / List -->
+                <div id="reviewsList" class="space-y-3">
+                    {% for r in analysis.reviews %}
+                    <div class="review-card p-4 rounded-xl border border-slate-800/80 transition-all duration-300"
+                         data-source="{{ r.source }}"
+                         data-sentiment="{{ r.sentiment }}"
+                         data-text="{{ r.text | lower }}">
+                        
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                            <div class="flex items-center space-x-2">
+                                {% if r.source == 'twitter' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-sky-950/60 text-sky-400 border border-sky-800/50">
+                                    <i data-lucide="twitter" class="w-3 h-3 mr-1"></i> Twitter
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-amber-950/60 text-amber-400 border border-amber-800/50">
+                                    <i data-lucide="globe" class="w-3 h-3 mr-1"></i> Google
+                                </span>
+                                {% endif %}
+                                
+                                <span class="text-xs font-bold text-white">{{ r.author }}</span>
+                                <span class="text-xs text-slate-500">• {{ r.date }}</span>
+                            </div>
+
+                            <div class="flex items-center space-x-2">
+                                <!-- Star Rating -->
+                                <div class="flex items-center text-amber-400 text-xs">
+                                    {% for i in range(r.rating if r.rating else 4) %}
+                                        <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                                    {% endfor %}
+                                </div>
+
+                                <!-- Sentiment Badge -->
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold {% if r.sentiment == 'Positive' %}bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 shadow-sm shadow-emerald-950{% elif r.sentiment == 'Negative' %}bg-rose-950/80 text-rose-400 border border-rose-500/40 shadow-sm shadow-rose-950{% else %}bg-slate-800 text-slate-300 border border-slate-700{% endif %}">
+                                    {{ r.sentiment }} ({{ r.compound_score }})
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Review Text -->
+                        <p class="text-xs sm:text-sm text-slate-200 leading-relaxed mb-3">
+                            "{{ r.text }}"
+                        </p>
+
+                        <!-- Aspect tags & Emotion pill -->
+                        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/60">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                {% for asp_name, asp_val in r.aspects.items() %}
+                                <span class="tag-chip text-xs px-2.5 py-0.5 rounded-lg font-medium {% if asp_val.sentiment == 'Positive' %}bg-emerald-950/40 text-emerald-300 border border-emerald-500/30{% elif asp_val.sentiment == 'Negative' %}bg-rose-950/40 text-rose-300 border border-rose-500/30{% else %}bg-slate-800/60 text-slate-400 border border-slate-700/60{% endif %}">
+                                    {{ asp_name }}: {{ asp_val.sentiment }}
+                                </span>
+                                {% endfor %}
+
+                                {% for em in r.emotions %}
+                                <span class="tag-chip text-xs px-2.5 py-0.5 rounded-lg font-medium bg-indigo-950/40 text-indigo-300 border border-indigo-500/30">
+                                    💭 {{ em }}
+                                </span>
+                                {% endfor %}
+                            </div>
+
+                            <!-- One Click Reply Generator -->
+                            <button onclick="openReplyFromCard(this)" class="btn-glow text-xs text-indigo-400 hover:text-indigo-300 font-bold inline-flex items-center px-2.5 py-1 rounded-lg hover:bg-indigo-950/50 transition">
+                                <i data-lucide="reply" class="w-3.5 h-3.5 mr-1"></i> Draft AI Reply
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- ==================================================== -->
+        <!-- TAB 2: FIELD SURVEY RESEARCH INSIGHTS (50 RESPONSES) -->
+        <!-- ==================================================== -->
+        <section id="surveyDashboardSection" class="space-y-6 hidden">
+
+            <!-- Survey Banner -->
+            <div class="dark-glass hover-lift hover-tilt rounded-2xl p-6 sm:p-7 relative overflow-hidden shadow-2xl border border-indigo-500/30">
+                <div class="absolute -right-20 -top-20 w-64 h-64 bg-violet-600/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
+                    <div>
+                        <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 mb-2 border border-indigo-500/30">
+                            <i data-lucide="database" class="w-3.5 h-3.5 mr-1.5 text-indigo-400"></i>
+                            Verified Empirical Field Research
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                            Local Consumer Survey Analytics (50 Respondents)
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed mt-1 font-normal">
+                            Real-world survey data demonstrating how local consumers discover businesses, check reviews, evaluate service quality, and decide whether to return after a negative experience.
+                        </p>
+                    </div>
+
+                    <div class="flex items-center space-x-3 bg-slate-900/80 px-4 py-3 rounded-2xl border border-slate-700/80 shadow-inner">
+                        <div class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>
+                        <div>
+                            <span class="text-xs font-bold text-white block">50 Sample Records</span>
+                            <span class="text-[11px] text-slate-400">11 Question Categories</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Survey Key Takeaways 4-Card Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {% for t in survey_metrics.key_takeaways %}
+                <div class="dark-glass hover-lift hover-tilt rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                    <div>
+                        <span class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-violet-300 to-sky-400">
+                            {{ t.stat }}
+                        </span>
+                        <h4 class="text-xs font-bold text-white mt-1">{{ t.label }}</h4>
+                        <p class="text-xs text-slate-400 mt-1 leading-relaxed">{{ t.desc }}</p>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-slate-800/80 flex items-center text-[11px] text-indigo-400 font-semibold">
+                        <i data-lucide="check" class="w-3.5 h-3.5 mr-1 text-emerald-400"></i> Project Hypothesis Proven
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Category Filter Tabs for Survey Questions -->
+            <div class="flex flex-wrap items-center gap-2 pt-2">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mr-2">Filter Category:</span>
+                <button onclick="filterSurveyCards('all')" data-cat="all" class="survey-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white border border-indigo-500 shadow-sm transition">
+                    All Questions (11)
+                </button>
+                <button onclick="filterSurveyCards('demographics')" data-cat="demographics" class="survey-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-white transition">
+                    Demographics
+                </button>
+                <button onclick="filterSurveyCards('habits')" data-cat="habits" class="survey-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-white transition">
+                    Review Habits
+                </button>
+                <button onclick="filterSurveyCards('factors')" data-cat="factors" class="survey-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-white transition">
+                    Review Factors
+                </button>
+                <button onclick="filterSurveyCards('pain_points')" data-cat="pain_points" class="survey-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-white transition">
+                    Pain Points & Problems
+                </button>
+                <button onclick="filterSurveyCards('service_recovery')" data-cat="service_recovery" class="survey-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-white transition">
+                    Service Recovery & Retention
+                </button>
+            </div>
+
+            <!-- Survey Questions Charts Grid -->
+            <div id="surveyQuestionsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {% for q in survey_metrics.questions %}
+                <div class="survey-question-card dark-glass hover-lift hover-tilt rounded-2xl p-5 shadow-xl border border-slate-800 flex flex-col justify-between"
+                     data-category="{{ q.category }}">
+                    
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider bg-slate-800 text-indigo-300 border border-slate-700">
+                                {{ q.category | replace('_', ' ') }}
+                            </span>
+                            <span class="text-xs text-slate-400 font-semibold">{{ q.responses_count }} responses</span>
+                        </div>
+
+                        <h3 class="text-sm font-bold text-white mb-3 min-h-[40px] flex items-center leading-snug">
+                            {{ q.title }}
+                        </h3>
+
+                        <!-- Chart Canvas Container -->
+                        <div class="relative h-44 my-2 flex items-center justify-center">
+                            <canvas id="survey_chart_{{ q.id }}"></canvas>
+                        </div>
+
+                        <!-- Data Breakdown Legend -->
+                        <div class="space-y-1.5 mt-3 pt-3 border-t border-slate-800/80 text-xs">
+                            {% for item in q.data %}
+                            <div class="flex items-center justify-between">
+                                <span class="flex items-center text-slate-300 font-medium">
+                                    <span class="w-2.5 h-2.5 rounded-full mr-2 shrink-0" style="background-color: {{ item.color }}"></span>
+                                    <span class="truncate max-w-[170px]">{{ item.label }}</span>
+                                </span>
+                                <span class="font-extrabold text-white">{{ item.percentage }}%</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Strategic Project Takeaway -->
+                    <div class="mt-4 pt-3 border-t border-slate-800/80 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/60">
+                        <span class="text-[10px] uppercase font-bold text-indigo-400 block mb-0.5 flex items-center">
+                            <i data-lucide="lightbulb" class="w-3 h-3 mr-1 text-amber-400"></i> Project Relevance
+                        </span>
+                        <p class="text-[11px] text-slate-300 leading-relaxed font-normal">
+                            {{ q.insight }}
+                        </p>
+                    </div>
+
+                </div>
+                {% endfor %}
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-[#090d16] border-t border-slate-800/80 py-6 mt-12 text-center text-xs text-slate-500 relative z-10">
+        <p class="font-bold text-slate-400">Project: Sentiment Analysis of Local Business Reviews</p>
+        <p class="mt-1">Scrapes and analyzes online reviews (Google, Twitter/X) & provides actionable feedback to businesses to improve services.</p>
+    </footer>
+
+    <!-- MODAL 1: Scrape & Analyze New Business -->
+    <div id="scrapeModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md hidden p-4">
+        <div class="dark-glass rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-700/80 relative max-h-[90vh] overflow-y-auto bg-[#0f172a]">
+            <button onclick="closeModal('scrapeModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center">
+                    <i data-lucide="scan-search" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Scrape & Analyze Local Business</h3>
+                    <p class="text-xs text-slate-400">Enter any local business name, category, or public URL to scrape and analyze.</p>
+                </div>
+            </div>
+
+            <form id="scrapeForm" onsubmit="handleScrapeSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Business Name *</label>
+                    <input type="text" id="inputBizName" required placeholder="e.g. Blue Fin Sushi, Apex Auto Care" class="w-full text-sm px-3.5 py-2 bg-slate-900/90 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Industry / Category</label>
+                        <select id="inputCategory" class="w-full text-sm px-3 py-2 bg-slate-900/90 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer">
+                            <option value="Restaurant & Dining">Restaurant & Dining</option>
+                            <option value="Gym & Health Club">Gym & Fitness Club</option>
+                            <option value="Healthcare & Dentistry">Healthcare & Dental</option>
+                            <option value="Hotel & Hospitality">Hotel & Hospitality</option>
+                            <option value="Retail & Shopping">Retail & Shopping</option>
+                            <option value="Auto Services">Automotive Services</option>
+                            <option value="General Local Business">Other Local Business</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">City / Region</label>
+                        <input type="text" id="inputCity" placeholder="e.g. Austin, TX" class="w-full text-sm px-3.5 py-2 bg-slate-900/90 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Target Web URL (Optional Scrape Source)</label>
+                    <input type="url" id="inputUrl" placeholder="https://example.com/business-reviews" class="w-full text-sm px-3.5 py-2 bg-slate-900/90 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <p class="text-[11px] text-slate-400 mt-1">Leave empty to run automated Google Reviews + Twitter/X discovery pipeline.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Paste Custom Reviews / CSV (Optional)</label>
+                    <textarea id="inputManualReviews" rows="3" placeholder="Paste reviews (one per line, or rating,review text)..." class="w-full text-xs px-3 py-2 bg-slate-900/90 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                </div>
+
+                <!-- Animated Scrape Progress Indicator (Hidden until triggered) -->
+                <div id="scrapeProgressBox" class="hidden bg-slate-950/80 border border-indigo-500/30 rounded-xl p-4 space-y-2">
+                    <div class="flex items-center justify-between text-xs font-bold text-indigo-400">
+                        <span id="scrapeProgressStep" class="flex items-center">
+                            <i data-lucide="loader" class="w-4 h-4 mr-1.5 animate-spin"></i>
+                            Connecting to Google & Twitter scrapers...
+                        </span>
+                        <span id="scrapeProgressPercent">25%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div id="scrapeProgressBar" class="bg-gradient-to-r from-indigo-500 to-violet-500 h-2 rounded-full transition-all duration-500" style="width: 25%"></div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeModal('scrapeModal')" class="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition">
+                        Cancel
+                    </button>
+                    <button type="submit" id="scrapeSubmitBtn" class="btn-glow px-5 py-2 text-xs font-extrabold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center">
+                        <i data-lucide="sparkles" class="w-4 h-4 mr-1.5"></i>
+                        Start Scraping & NLP Analysis
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Single Review Tester & Instant AI Replier -->
+    <div id="singleTestModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md hidden p-4">
+        <div class="dark-glass rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-700/80 relative bg-[#0f172a]">
+            <button onclick="closeModal('singleTestModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 rounded-xl bg-violet-600/20 border border-violet-500/30 text-violet-400 flex items-center justify-center">
+                    <i data-lucide="flask-conical" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Instant Review & Tweet Tester</h3>
+                    <p class="text-xs text-slate-400">Test any customer sentence for sentiment, aspects, and reply generation.</p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Review or Tweet Content</label>
+                    <textarea id="singleTestText" rows="3" placeholder="e.g. Waiter was super friendly but the steak took 45 minutes to arrive and was cold." class="w-full text-sm px-3.5 py-2 bg-slate-900/90 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <label class="text-xs text-slate-400 font-medium">Rating:</label>
+                        <select id="singleTestRating" class="text-xs bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-slate-200">
+                            <option value="5">⭐⭐⭐⭐⭐ (5 Stars)</option>
+                            <option value="4">⭐⭐⭐⭐ (4 Stars)</option>
+                            <option value="3" selected>⭐⭐⭐ (3 Stars)</option>
+                            <option value="2">⭐⭐ (2 Stars)</option>
+                            <option value="1">⭐ (1 Star)</option>
+                        </select>
+                    </div>
+
+                    <button onclick="runSingleReviewAnalysis()" class="btn-glow px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition flex items-center shadow-lg shadow-indigo-600/30">
+                        <i data-lucide="zap" class="w-3.5 h-3.5 mr-1 text-amber-300"></i> Run Analysis
+                    </button>
+                </div>
+
+                <!-- Live Results Output -->
+                <div id="singleTestResults" class="hidden bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">NLP Result</span>
+                        <span id="singleSentimentBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold">Positive</span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                        <div>
+                            <span class="text-slate-400 block">Pos</span>
+                            <span id="singleScorePos" class="font-bold text-emerald-400">0.0</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block">Neu</span>
+                            <span id="singleScoreNeu" class="font-bold text-slate-300">0.0</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block">Neg</span>
+                            <span id="singleScoreNeg" class="font-bold text-rose-400">0.0</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="text-xs font-semibold text-slate-300 block mb-1">Extracted Aspects:</span>
+                        <div id="singleAspectsList" class="flex flex-wrap gap-1.5 text-xs"></div>
+                    </div>
+
+                    <div>
+                        <span class="text-xs font-semibold text-slate-300 block mb-1">AI Response Draft:</span>
+                        <div id="singleReplyDraft" class="text-xs text-slate-200 bg-slate-900/90 p-3 rounded-xl border border-slate-800 leading-relaxed select-all"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Instant Reply Drafting Modal -->
+    <div id="replyModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md hidden p-4">
+        <div class="dark-glass rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-700/80 relative bg-[#0f172a]">
+            <button onclick="closeModal('replyModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div class="flex items-center space-x-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center">
+                    <i data-lucide="reply" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Tailored Customer Response</h3>
+                    <p class="text-xs text-slate-400">AI drafted response customized for <span id="replyAuthor" class="font-bold text-white">Customer</span></p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div class="text-xs bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-slate-300 italic">
+                    "<span id="replyOriginalText">Review text goes here</span>"
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Generated Response Draft</label>
+                    <textarea id="replyTextarea" rows="5" class="w-full text-xs sm:text-sm p-3 bg-slate-900 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none font-sans leading-relaxed text-white"></textarea>
+                </div>
+
+                <div class="flex items-center justify-between pt-2">
+                    <span id="replyCopyStatus" class="text-xs text-emerald-400 font-bold hidden">✓ Copied to clipboard!</span>
+                    <button onclick="copyReplyText()" class="btn-glow ml-auto px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition flex items-center shadow-lg shadow-indigo-600/30">
+                        <i data-lucide="copy" class="w-4 h-4 mr-1.5"></i> Copy to Clipboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inject initial data into JS -->
+    <script>
+        window.INITIAL_ANALYSIS = {{ analysis | tojson }};
+        window.INITIAL_RECOMMENDATIONS = {{ recommendations | tojson }};
+        window.INITIAL_BUSINESS = {{ active_business | tojson }};
+        window.SURVEY_METRICS = {{ survey_metrics | tojson }};
+    </script>
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
