@@ -844,6 +844,9 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+
     <!-- MODAL 4: QR Code & Mobile Access Modal -->
     <div id="qrModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md hidden p-4">
         <div class="dark-glass rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-700/80 relative bg-[#0f172a] text-center">
@@ -860,11 +863,26 @@
                 <img src="/static/qr_code.png" alt="Scan QR Code" class="w-48 h-48 rounded-lg mx-auto object-contain">
             </div>
 
-            <div class="mt-4 bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 text-xs flex items-center justify-between">
-                <span class="text-indigo-400 truncate max-w-[200px] select-all font-mono">https://da9f9dc8c58aa3.lhr.life</span>
-                <button onclick="navigator.clipboard.writeText('https://da9f9dc8c58aa3.lhr.life'); alert('Link copied to clipboard!');" class="btn-glow px-2.5 py-1 text-[11px] font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500">
-                    Copy
-                </button>
+            <div class="space-y-2 mt-4 text-xs">
+                <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <div class="text-left overflow-hidden mr-2">
+                        <span class="text-[10px] uppercase font-bold text-emerald-400 block">Public Internet Link</span>
+                        <span class="text-indigo-300 truncate block font-mono text-[11px] select-all">https://da9f9dc8c58aa3.lhr.life</span>
+                    </div>
+                    <button onclick="navigator.clipboard.writeText('https://da9f9dc8c58aa3.lhr.life'); alert('Online link copied!');" class="btn-glow px-2.5 py-1 text-[11px] font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 shrink-0">
+                        Copy
+                    </button>
+                </div>
+
+                <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <div class="text-left overflow-hidden mr-2">
+                        <span class="text-[10px] uppercase font-bold text-sky-400 block">Same Wi-Fi Link (Fastest)</span>
+                        <span class="text-slate-300 truncate block font-mono text-[11px] select-all">http://192.168.0.104:5000</span>
+                    </div>
+                    <button onclick="navigator.clipboard.writeText('http://192.168.0.104:5000'); alert('Local Wi-Fi link copied!');" class="btn-glow px-2.5 py-1 text-[11px] font-bold text-white bg-sky-600 rounded-lg hover:bg-sky-500 shrink-0">
+                        Copy
+                    </button>
+                </div>
             </div>
         </div>
     </div>
