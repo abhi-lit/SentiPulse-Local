@@ -1,6 +1,6 @@
 import qrcode
 
-url = "https://desired-billion-unfortunately-participants.trycloudflare.com"
+url = "https://rocket-common-plate-unit.trycloudflare.com"
 qr = qrcode.QRCode(
     version=1,
     box_size=10,
