@@ -1,4 +1,4 @@
-# Sentiment Analysis of Local Business Reviews
+# SentiPulse-Local: Sentiment Analysis of Local Business Reviews
 
 ## Project Title
 **Sentiment Analysis of Local Business Reviews**
