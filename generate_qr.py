@@ -1,6 +1,6 @@
 import qrcode
 
-url = "https://rocket-common-plate-unit.trycloudflare.com"
+url = "https://represent-try-manga-cycle.trycloudflare.com"
 qr = qrcode.QRCode(
     version=1,
     box_size=10,
